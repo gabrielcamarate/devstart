@@ -1,87 +1,397 @@
-## Operating Principles (MUST)
-- Plan first: before any code change, write a short plan (bullets) and the expected files to change.
-- TDD is mandatory: tests MUST be written before implementation. No feature code without failing tests first.
-- Small steps: implement the smallest change to make tests pass, then refactor with tests green.
-- Deterministic tooling: pin tool versions when possible (Node/pnpm). Avoid @latest in infra.
+# Devstart --- Agent Operating Guide
 
-## Definition of Done (DoD)
-- Tests passing locally (`pnpm test`)
-- Typecheck passing (`pnpm typecheck`) if configured
-- Lint passing (`pnpm lint`) if configured
-- No undocumented new commands or scripts
+This file defines **how AI agents must operate inside this repository**.
 
-## Forbidden
-- Do NOT introduce new dependencies without stating why.
-- Do NOT change architecture decisions without updating this file.
-- Do NOT claim work is done without running tests.
+All code generation must follow the rules described here.
 
-## Project Architecture
+If there is a conflict between agent behavior and this document, **this
+document takes priority**.
 
-devstart is a CLI tool that bootstraps AI-first development environments.
+------------------------------------------------------------------------
+
+# Operating Principles (MUST)
+
+-   **Plan first:** before any code change, write a short plan (bullets)
+    and the expected files to change.
+-   **TDD is mandatory:** tests MUST be written before implementation.
+-   **Small steps:** implement the smallest change to make tests pass,
+    then refactor with tests green.
+-   **Deterministic tooling:** pin tool versions when possible
+    (Node/pnpm). Avoid `@latest` in infra.
+-   **Core-first testing:** tests must focus on business logic in
+    `src/core`.
+
+------------------------------------------------------------------------
+
+# Agent Task Protocol
+
+For every task the agent must follow this structure:
+
+### 1. PLAN
+
+Describe:
+
+-   what will be implemented
+-   which files will change
+-   which tests will be created
+
+### 2. WRITE TEST
+
+Create failing tests.
+
+### 3. IMPLEMENT
+
+Write the **minimum code required to pass tests**.
+
+### 4. VERIFY
+
+Run:
+
+    pnpm test
+
+### 5. REFACTOR
+
+Improve the code while keeping tests green.
+
+------------------------------------------------------------------------
+
+# Testing Strategy
+
+All tests must use **Vitest**.
+
+Tests must target the **core layer**, not the CLI.
+
+Reason:
+
+CLI code only parses arguments and delegates to core functions.
+
+Correct test targets:
+
+    src/core/createProject.ts
+    src/core/doctor.ts
+    src/core/jail.ts
+    src/utils/*
+
+Avoid testing:
+
+    src/cli/*
+
+------------------------------------------------------------------------
+
+# Test File Convention
+
+Tests must be colocated with source files.
+
+Example:
+
+    src/core/createProject.ts
+    src/core/createProject.test.ts
+
+    src/core/doctor.ts
+    src/core/doctor.test.ts
+
+Alternative acceptable pattern:
+
+    src/core/__tests__/createProject.test.ts
+
+But the repository must remain consistent.
+
+------------------------------------------------------------------------
+
+# TDD Workflow (MANDATORY)
+
+For every feature or bug fix the following workflow must be followed:
+
+1.  Write a failing test
+2.  Run tests and confirm failure
+3.  Implement the minimum code required
+4.  Run tests until green
+5.  Refactor while keeping tests green
+
+This cycle must repeat until the feature is complete.
+
+No implementation should exist without a test that covers it.
+
+------------------------------------------------------------------------
+
+# Runtime Abstraction
+
+Core logic must not depend directly on system side effects.
+
+The following operations must be abstracted:
+
+-   filesystem access
+-   command execution
+-   logging
+
+These operations must be injected via a **runtime interface**.
+
+Example responsibilities of the runtime:
+
+    filesystem
+    command execution (git, pnpm, docker)
+    logger
+
+This allows tests to run **without executing real commands**.
+
+Tests must never execute:
+
+    git
+    pnpm install
+    docker
+
+------------------------------------------------------------------------
+
+# Definition of Done (DoD)
+
+A task is only complete when:
+
+-   tests pass locally (`pnpm test`)
+-   typecheck passes (`pnpm typecheck`) if configured
+-   lint passes (`pnpm lint`) if configured
+-   no undocumented commands were added
+-   new behavior is covered by tests
+
+------------------------------------------------------------------------
+
+# Forbidden
+
+The agent MUST NOT:
+
+-   introduce new dependencies without justification
+-   change architecture without updating this file
+-   claim work is done without running tests
+-   execute real system commands during tests
+-   add logic inside the CLI layer
+
+------------------------------------------------------------------------
+
+# Project Overview
+
+**devstart** is a CLI tool that bootstraps **AI-first development
+environments**.
+
+The goal is to create reproducible project environments that work well
+with AI coding agents.
+
+------------------------------------------------------------------------
+
+# Project Architecture
 
 Structure:
 
-src/
-  cli/        → CLI entrypoints (Commander)
-  core/       → application use cases (createProject, doctor, jail)
-  utils/      → shared utilities
-templates/
-  node-ts/    → default project template
-  _jail/      → docker jail source files
+    src/
+      cli/        → CLI entrypoints (Commander)
+      core/       → application use cases
+      utils/      → shared utilities
 
----
+    templates/
+      node-ts/    → default project template
+      _jail/      → docker jail source files
 
-## CLI Commands
+Layer responsibilities:
 
-devstart new <name>
+### CLI
 
-Creates a new project by:
+Handles:
 
-1. creating the project folder
-2. copying the template from templates/node-ts
-3. replacing template variables (ex: {{projectName}})
-4. initializing git repository (main branch)
-5. running pnpm install
-6. optionally entering the dev jail
+-   command parsing
+-   flags
+-   delegating execution to core
+
+CLI must remain **thin**.
+
+No business logic should exist here.
+
+------------------------------------------------------------------------
+
+### Core
+
+Contains all application logic.
+
+Examples:
+
+    createProject
+    doctor
+    jail
+
+Core code must:
+
+-   be testable
+-   avoid direct system calls
+-   rely on runtime abstraction
+
+------------------------------------------------------------------------
+
+### Utils
+
+Shared helper utilities.
+
+Examples:
+
+    template replacement
+    path helpers
+    file utilities
+
+Utils should prefer **pure functions**.
+
+------------------------------------------------------------------------
+
+# CLI Commands
+
+## devstart new `<name>`{=html}
+
+Creates a new project.
+
+Steps:
+
+1.  create the project directory
+2.  copy template from `templates/node-ts`
+3.  replace template variables
+4.  initialize git repository (`main` branch)
+5.  run `pnpm install`
+6.  optionally enter the dev jail
 
 Flags:
 
--y / --yes → automatically enter jail  
--n / --no → skip jail
+    -y / --yes   automatically enter jail
+    -n / --no    skip jail
 
----
+------------------------------------------------------------------------
 
-devstart doctor
+## devstart doctor
 
-Checks system dependencies:
+Checks system dependencies.
 
-- node
-- pnpm
-- git
-- docker
+Dependencies checked:
 
-Note: docker may be unavailable when running inside the dev container.
+    node
+    pnpm
+    git
+    docker
 
----
+Note:
 
-devstart jail <dir>
+Docker may be unavailable when running inside the dev container.
 
+The command must return a **structured report** with:
+
+    check name
+    status
+    optional message
+
+------------------------------------------------------------------------
+
+\## devstart jail
+```{=html}
+<dir>
+```
 Applies the development jail to an existing project.
 
-Copies:
+Files copied:
 
-- Dockerfile
-- docker-compose.yml
-- jail.sh
+    Dockerfile
+    docker-compose.yml
+    jail.sh
 
-If files already exist they are skipped.
+Rules:
 
----
+-   existing files must not be overwritten
+-   copy operations must be idempotent
+-   jail can be applied multiple times safely
 
-## Template Variables
+------------------------------------------------------------------------
+
+# createProject Behavior Contract
+
+createProject must:
+
+1.  fail if the target directory already exists
+2.  copy the selected template directory
+3.  replace template variables
+4.  initialize git with `main` branch
+5.  run `pnpm install`
+6.  optionally start the dev jail
+
+Edge cases that must be tested:
+
+    existing directory
+    missing template
+    git disabled
+    install disabled
+
+------------------------------------------------------------------------
+
+# doctor Behavior
+
+doctor checks system dependencies.
+
+Expected checks:
+
+    node
+    pnpm
+    git
+    docker
+
+The command should return a structured report containing:
+
+    check name
+    status
+    optional message
+
+Tests must simulate command execution using runtime mocks.
+
+------------------------------------------------------------------------
+
+# jail Behavior
+
+jail applies development container configuration to a project.
+
+Files copied:
+
+    Dockerfile
+    docker-compose.yml
+    jail.sh
+
+Rules:
+
+    existing files must not be overwritten
+    copy operations must be idempotent
+
+------------------------------------------------------------------------
+
+# Template Variables
 
 Supported variables:
 
-{{projectName}}
+    {{projectName}}
 
-Replaced across all files during project creation.
+Variables must be replaced across all files during project creation.
+
+Future variables must be documented here.
+
+------------------------------------------------------------------------
+
+# CI Expectations (future)
+
+Continuous integration should run:
+
+    pnpm install
+    pnpm test
+    pnpm typecheck
+    pnpm lint
+
+Tests must run **without requiring Docker or Git**.
+
+------------------------------------------------------------------------
+
+# Development Philosophy
+
+Devstart is designed to be:
+
+-   **AI-friendly**
+-   **deterministic**
+-   **testable**
+-   **template-driven**
+
+All changes must preserve these properties.
