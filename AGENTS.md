@@ -1,5 +1,7 @@
 # Devstart --- Agent Operating Guide
 
+Always repli in Brazilian Portuguese (pt-br)
+
 This file defines **how AI agents must operate inside this repository**.
 
 All code generation must follow the rules described here.
@@ -398,6 +400,80 @@ This repository uses:
 If a change affects governance rules, this file MUST be updated.
 
 ------------------------------------------------------------------------
+
+
+# Development Roadmap
+
+Devstart is built incrementally using the following phases.
+
+Day 1 — Project Bootstrap
+- Initialize repository
+- Setup Node + TypeScript
+- Setup pnpm
+- Define project structure
+- Implement CLI skeleton with Commander
+
+Day 2 — Core CLI Implementation
+- Implement commands:
+  - devstart new
+  - devstart doctor
+  - devstart jail
+- Implement template system
+- Implement Docker dev jail
+- Define architecture and agent rules (this document)
+
+Day 3 — Testing Infrastructure
+- Introduce Vitest
+- Implement Runtime abstraction to isolate side effects
+- Add FakeRuntime for tests
+- Write unit tests for:
+  - template variable replacement
+  - createProject core logic
+
+Day 4 — Reliability Improvements
+- Improve error handling
+- Remove process.exit from core
+- Return structured reports (doctor)
+- Improve CLI/core separation
+
+Day 5 — DX Improvements
+- Add help improvements
+- Improve CLI output
+- Add dry-run mode
+- Improve template extensibility
+
+Day 6 — Distribution
+- Package CLI
+- Test installation via pnpm dlx / npm
+- Ensure templates work outside repo
+- Prepare for publishing
+
+
+# Current Phase
+
+Current development phase: **Day 3 — Testing Infrastructure**
+
+The focus of this phase is:
+
+- Introduce Vitest
+- Make core logic testable
+- Add unit tests
+- Avoid changing CLI behavior
+
+Agents must prioritize tasks related to the current phase before implementing new features.
+
+# Phase Exit Criteria
+
+Day 3 is considered complete when:
+
+- Vitest is configured
+- Runtime abstraction exists
+- FakeRuntime exists
+- Unit tests exist for utils and createProject
+- pnpm test passes
+
+
+
 
 # Development Philosophy
 
