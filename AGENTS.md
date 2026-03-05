@@ -473,6 +473,42 @@ Day 3 is considered complete when:
 - pnpm test passes
 
 
+## Agent Learning Rules
+
+When an agent makes a mistake during development, the resolution should be documented here
+to prevent the same issue in future sessions.
+
+Agents must read this section before performing repository operations.
+
+### pnpm store location
+
+Do NOT use a global pnpm store in the user home directory.
+
+All pnpm installations must use a repository-local store.
+
+Required configuration:
+
+.pnpm-store/
+
+Example command:
+
+pnpm add -D <package> --store-dir .pnpm-store
+
+Reason:
+This prevents the agent from modifying the developer's host environment and keeps all
+dependencies isolated inside the project workspace.
+
+
+### Core modules must not terminate the process
+
+Core code must never call process.exit.
+
+Instead it should throw errors and allow the CLI layer to decide how to exit.
+
+Reason:
+This enables proper unit testing and avoids terminating the test runner.
+
+
 
 
 # Development Philosophy
