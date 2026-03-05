@@ -385,6 +385,20 @@ Tests must run **without requiring Docker or Git**.
 
 ------------------------------------------------------------------------
 
+## Repo Governance (MANDATORY)
+
+This repository uses:
+
+- trunk-based development (`main`)
+- short-lived branches (`feat/*`, `fix/*`, `docs/*`, `chore/*`)
+- Conventional Commits
+- SemVer versioning
+- releases via tags `vX.Y.Z`
+
+If a change affects governance rules, this file MUST be updated.
+
+------------------------------------------------------------------------
+
 # Development Philosophy
 
 Devstart is designed to be:
